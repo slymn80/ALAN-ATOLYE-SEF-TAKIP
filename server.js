@@ -34,6 +34,7 @@ const PERIOD_TIMES = [
 ];
 const SESSION_MAX_AGE = 60 * 60 * 12;
 let generatedAdminPassword = null;
+let generatedChiefPassword = null;
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const db = new DatabaseSync(DB_FILE);
@@ -89,6 +90,11 @@ db.exec(`
     PRIMARY KEY(user_id, attendance_date, period)
   );
 
+  CREATE TABLE IF NOT EXISTS app_settings (
+    setting_key TEXT PRIMARY KEY,
+    setting_value TEXT NOT NULL
+  );
+
   CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(attendance_date);
   CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
   CREATE INDEX IF NOT EXISTS idx_attendance_periods_date ON attendance_periods(attendance_date);
@@ -120,36 +126,61 @@ function seedDatabase() {
   }
 
   const chiefs = [
-    ['Suat ÇELİKER', 'Bilişim Teknolojileri', 'Alan Şefi', 'Yazılım Geliştirme Atölyesi'],
-    ['Hüseyin Özgür GÜLER', 'Bilişim Teknolojileri', 'Atölye Şefi', '1. Atölye'],
-    ['Osman KALDAN', 'Bilişim Teknolojileri', 'Atölye Şefi', '2. Atölye'],
-    ['Ayşe Evrensel BÜZRÜÇ', 'Çocuk Gelişimi ve Eğitimi', 'Alan Şefi', ''],
-    ['Burcu COŞKUN', 'Çocuk Gelişimi ve Eğitimi', 'Atölye Şefi', '1. Atölye'],
-    ['Handan KOCAACAR', 'Çocuk Gelişimi ve Eğitimi', 'Atölye Şefi', '2. Atölye'],
-    ['Zeliha ÇETİN', 'Çocuk Gelişimi ve Eğitimi', 'Atölye Şefi', 'Ana Sınıfı'],
-    ['Melis AĞAR', 'Grafik ve Fotoğraf', 'Alan Şefi', ''],
-    ['Güner Kaya BOZKURT', 'Grafik ve Fotoğraf', 'Atölye Şefi', 'Bilgisayarlı Grafik Atölyesi'],
-    ['Dilek DIRAMAN CEVİZ', 'Grafik ve Fotoğraf', 'Atölye Şefi', 'Desen Atölyesi'],
-    ['Ezgi İFTAR KAZAR', 'Güzellik ve Saç Bakım Hizmetleri', 'Alan Şefi', 'Cilt Bakım Atölyesi'],
-    ['Zehra ÇETİN', 'Güzellik ve Saç Bakım Hizmetleri', 'Atölye Şefi', 'Kuaförlük Atölyesi'],
-    ['Sevda ÇETİNALP', 'Yiyecek İçecek Hizmetleri', 'Alan Şefi', ''],
-    ['Fatma SÖZEN', 'Yiyecek İçecek Hizmetleri', 'Atölye Şefi', '1. Atölye'],
-    ['Serkan BEKTAŞ', 'Yiyecek İçecek Hizmetleri', 'Atölye Şefi', '2. Atölye'],
-    ['Seray ABAOĞLU', 'Yiyecek İçecek Hizmetleri', 'Atölye Şefi', '3. Atölye'],
-    ['Sevil EYİLETEN', 'Yiyecek İçecek Hizmetleri', 'Atölye Şefi', 'Servis Atölyesi']
+    ['Suat ÇELİKER', 'Bilişim Teknolojileri', 'Alan Şefi', 'Yazılım Geliştirme Atölyesi', 'suat.celiker'],
+    ['Hüseyin Özgür GÜLER', 'Bilişim Teknolojileri', 'Atölye Şefi', '1. Atölye', 'huseyin.ozgur.guler'],
+    ['Osman KALDAN', 'Bilişim Teknolojileri', 'Atölye Şefi', '2. Atölye', 'osman.kaldan'],
+    ['Ayşe Evrensel BÜZRÜÇ', 'Çocuk Gelişimi ve Eğitimi', 'Alan Şefi', '', 'ayse.evrensel.buzruc'],
+    ['Burcu COŞKUN', 'Çocuk Gelişimi ve Eğitimi', 'Atölye Şefi', '1. Atölye', 'burcu.coskun'],
+    ['Handan KOCAACAR', 'Çocuk Gelişimi ve Eğitimi', 'Atölye Şefi', '2. Atölye', 'handan.kocaacar'],
+    ['Zeliha ÇETİN', 'Çocuk Gelişimi ve Eğitimi', 'Atölye Şefi', 'Ana Sınıfı', 'zeliha.cetin'],
+    ['Melis AĞAR', 'Grafik ve Fotoğraf', 'Alan Şefi', '', 'melis.agar'],
+    ['Güner Kaya BOZKURT', 'Grafik ve Fotoğraf', 'Atölye Şefi', 'Bilgisayarlı Grafik Atölyesi', 'guner.kaya.bozkurt'],
+    ['Dilek DIRAMAN CEVİZ', 'Grafik ve Fotoğraf', 'Atölye Şefi', 'Desen Atölyesi', 'dilek.diraman.ceviz'],
+    ['Ezgi İFTAR KAZAR', 'Güzellik ve Saç Bakım Hizmetleri', 'Alan Şefi', 'Cilt Bakım Atölyesi', 'ezgi.iftar.kazar'],
+    ['Zehra ÇETİN', 'Güzellik ve Saç Bakım Hizmetleri', 'Atölye Şefi', 'Kuaförlük Atölyesi', 'zehra.cetin'],
+    ['Sevda ÇETİNALP', 'Yiyecek İçecek Hizmetleri', 'Alan Şefi', '', 'sevda.cetinalp'],
+    ['Fatma SÖZEN', 'Yiyecek İçecek Hizmetleri', 'Atölye Şefi', '1. Atölye', 'fatma.sozen'],
+    ['Serkan BEKTAŞ', 'Yiyecek İçecek Hizmetleri', 'Atölye Şefi', '2. Atölye', 'serkan.bektas'],
+    ['Seray ABAOĞLU', 'Yiyecek İçecek Hizmetleri', 'Atölye Şefi', '3. Atölye', 'seray.abaoglu'],
+    ['Sevil EYİLETEN', 'Yiyecek İçecek Hizmetleri', 'Atölye Şefi', 'Servis Atölyesi', 'sevil.eyileten']
   ];
-  const exists = db.prepare('SELECT id FROM users WHERE full_name = ? AND department = ? LIMIT 1');
+  const exists = db.prepare('SELECT id, password_hash FROM users WHERE full_name = ? AND department = ? LIMIT 1');
   const insert = db.prepare(`INSERT INTO users
-    (full_name, department, position, workshop, role, active)
-    VALUES (?, ?, ?, ?, 'chief', 1)`);
+    (full_name, department, position, workshop, username, password_hash, role, active, must_change_password)
+    VALUES (?, ?, ?, ?, ?, ?, 'chief', 1, 1)`);
+  const setFixedUsername = db.prepare('UPDATE users SET username = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+  const createMissingCredentials = db.prepare(`UPDATE users SET username = ?, password_hash = ?, must_change_password = 1,
+    updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
+  const automaticAccountsApplied = Boolean(db.prepare("SELECT 1 FROM app_settings WHERE setting_key = 'automatic_chief_accounts_v1'").get());
+  const configuredChiefPassword = process.env.CHIEF_DEFAULT_PASSWORD;
+  if (configuredChiefPassword && (configuredChiefPassword.length < 8 || configuredChiefPassword.length > 128)) {
+    throw new Error('CHIEF_DEFAULT_PASSWORD en az 8 karakter olmalıdır.');
+  }
+  const chiefDefaultPassword = configuredChiefPassword || crypto.randomBytes(12).toString('base64url');
+  let chiefDefaultPasswordUsed = false;
   db.exec('BEGIN');
   try {
-    for (const chief of chiefs) if (!exists.get(chief[0], chief[1])) insert.run(...chief);
+    for (const chief of chiefs) {
+      const current = exists.get(chief[0], chief[1]);
+      if (!current) {
+        insert.run(...chief, hashPassword(chiefDefaultPassword));
+        chiefDefaultPasswordUsed = true;
+      } else if (!automaticAccountsApplied || !current.password_hash) {
+        createMissingCredentials.run(chief[4], hashPassword(chiefDefaultPassword), current.id);
+        chiefDefaultPasswordUsed = true;
+      }
+      else setFixedUsername.run(chief[4], current.id);
+    }
+    if (!automaticAccountsApplied) {
+      db.prepare("DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE role = 'chief')").run();
+      db.prepare("INSERT INTO app_settings (setting_key, setting_value) VALUES ('automatic_chief_accounts_v1', CURRENT_TIMESTAMP)").run();
+    }
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
     throw error;
   }
+  if (chiefDefaultPasswordUsed && !configuredChiefPassword) generatedChiefPassword = chiefDefaultPassword;
 
   // şeflik saatleri.xlsx dosyasındaki haftalık çizelge (gün: [ders saatleri])
   const schedules = {
@@ -192,8 +223,6 @@ function seedDatabase() {
 seedDatabase();
 db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now());
 
-const loginAttempts = new Map();
-
 function json(res, status, data, headers = {}) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers });
   res.end(JSON.stringify(data));
@@ -206,12 +235,6 @@ function parseCookies(req) {
     if (index > 0) result[part.slice(0, index).trim()] = decodeURIComponent(part.slice(index + 1).trim());
   }
   return result;
-}
-
-function clientIp(req) {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.trim()) return forwarded.split(',')[0].trim();
-  return req.socket.remoteAddress || 'unknown';
 }
 
 function publicUser(row) {
@@ -487,17 +510,10 @@ async function api(req, res, url) {
   if (req.method === 'POST' && pathname === '/api/auth/login') {
     const body = await readBody(req);
     const username = sanitizeText(body.username, 50);
-    const key = `${clientIp(req)}:${username.toLocaleLowerCase('tr-TR')}`;
-    const attempt = loginAttempts.get(key) || { count: 0, since: Date.now() };
-    if (Date.now() - attempt.since > 15 * 60_000) { attempt.count = 0; attempt.since = Date.now(); }
-    if (attempt.count >= 10) return json(res, 429, { error: 'Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.' });
     const row = db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE AND active = 1').get(username);
     if (!row || !verifyPassword(String(body.password || ''), row.password_hash)) {
-      attempt.count += 1;
-      loginAttempts.set(key, attempt);
       return json(res, 401, { error: 'Kullanıcı adı veya şifre hatalı.' });
     }
-    loginAttempts.delete(key);
     const token = crypto.randomBytes(32).toString('base64url');
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
@@ -588,23 +604,15 @@ async function api(req, res, url) {
     const existing = db.prepare("SELECT * FROM users WHERE id = ? AND role = 'chief'").get(id);
     if (!existing) return json(res, 404, { error: 'Şef bulunamadı.' });
     const body = await readBody(req);
-    const username = sanitizeText(body.username, 50).toLocaleLowerCase('tr-TR');
     const active = body.active === false ? 0 : 1;
     const password = String(body.password || '');
-    if (!/^[a-z0-9._-]{3,50}$/.test(username)) return json(res, 400, { error: 'Kullanıcı adı 3-50 karakter olmalı; küçük harf, rakam, nokta, tire ve alt çizgi kullanılabilir.' });
-    if (!existing.password_hash && password.length < 8) return json(res, 400, { error: 'İlk hesap oluşturulurken en az 8 karakterli şifre girin.' });
     if (password && (password.length < 8 || password.length > 128)) return json(res, 400, { error: 'Şifre en az 8 karakter olmalıdır.' });
-    try {
-      if (password) {
-        db.prepare(`UPDATE users SET username=?, password_hash=?, active=?, must_change_password=1,
-          updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(username, hashPassword(password), active, id);
-        db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
-      } else {
-        db.prepare('UPDATE users SET username=?, active=?, updated_at=CURRENT_TIMESTAMP WHERE id=?').run(username, active, id);
-      }
-    } catch (error) {
-      if (String(error.message).includes('UNIQUE')) return json(res, 409, { error: 'Bu kullanıcı adı başka bir hesapta kullanılıyor.' });
-      throw error;
+    if (password) {
+      db.prepare(`UPDATE users SET password_hash=?, active=?, must_change_password=1,
+        updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(hashPassword(password), active, id);
+      db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+    } else {
+      db.prepare('UPDATE users SET active=?, updated_at=CURRENT_TIMESTAMP WHERE id=?').run(active, id);
     }
     return json(res, 200, { user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(id)) });
   }
@@ -660,6 +668,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`Şef Takip uygulaması http://${HOST}:${PORT} adresinde çalışıyor.`);
   if (generatedAdminPassword) console.log(`İlk yönetici girişi: admin / ${generatedAdminPassword} (girişte değiştirmeniz istenir)`);
+  if (generatedChiefPassword) console.log(`Şef hesapları için üretilen ilk şifre: ${generatedChiefPassword}`);
 });
 
 function shutdown() {

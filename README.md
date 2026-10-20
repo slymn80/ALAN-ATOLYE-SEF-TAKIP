@@ -19,6 +19,7 @@ Ardından `http://127.0.0.1:3000` adresini açın.
 ```powershell
 $env:ADMIN_USERNAME='yonetici'
 $env:ADMIN_PASSWORD='guclu-bir-ilk-sifre'
+$env:CHIEF_DEFAULT_PASSWORD='sefler-icin-ortak-ilk-sifre'
 $env:HOST='0.0.0.0'
 npm.cmd start
 ```
@@ -28,6 +29,8 @@ npm.cmd start
 ## Özellikler
 
 - PDF listesindeki 5 alan ve 17 şef başlangıç verisi olarak hazırdır.
+- Tüm şef hesapları sabit kullanıcı adlarıyla otomatik oluşturulur. Başlangıç şifresi `CHIEF_DEFAULT_PASSWORD` ortam değişkeninden alınır ve ilk girişte değiştirilmesi zorunludur.
+- Hatalı giriş sayısı nedeniyle hesap veya IP kilitlemesi uygulanmaz.
 - Yönetici, her şef için kullanıcı adı ve geçici şifre oluşturabilir; hesabı pasife alabilir veya şifreyi sıfırlayabilir.
 - `şeflik saatleri.xlsx` çizelgesindeki haftalık şeflik planı her kişi için hazırdır.
 - `çalışma saatleri.png` dosyasındaki 1-11. ders başlangıç/bitiş saatleri sisteme işlenmiştir (1. ders 08.20–09.00, 11. ders 17.20–18.00).

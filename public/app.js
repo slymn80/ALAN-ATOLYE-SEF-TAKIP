@@ -177,7 +177,7 @@ async function saveAttendance(event) {
 
 async function renderUsers() {
   setHeader('YÖNETİM', 'Şef hesapları');
-  $('#page-content').innerHTML = `<div class="hero-strip"><div><h3>Hesap yönetimi</h3><p>PDF listesindeki şefler için giriş bilgileri oluşturun ve güncelleyin.</p></div></div><div class="empty-state">Hesaplar yükleniyor…</div>`;
+  $('#page-content').innerHTML = `<div class="hero-strip"><div><h3>Hesap yönetimi</h3><p>Şef hesapları ve sabit kullanıcı adları otomatik oluşturulur.</p></div></div><div class="empty-state">Hesaplar yükleniyor…</div>`;
   try {
     const data = await request('/api/admin/users');
     state.users = data.users;
@@ -189,31 +189,26 @@ function drawUsers(filter) {
   const needle = filter.toLocaleLowerCase('tr-TR');
   const users = state.users.filter(user => `${user.fullName} ${user.department} ${user.username || ''}`.toLocaleLowerCase('tr-TR').includes(needle));
   $('#page-content').innerHTML = `
-    <div class="hero-strip"><div><h3>Hesap yönetimi</h3><p>${state.users.length} şef · ${state.users.filter(user => user.username).length} hesap oluşturuldu</p></div></div>
+    <div class="hero-strip"><div><h3>Hesap yönetimi</h3><p>${state.users.length} otomatik hesap · Kullanıcı adları sabittir</p></div></div>
     <div class="toolbar"><input id="user-search" type="search" value="${escapeHtml(filter)}" placeholder="Şef veya alan ara…"></div>
     <div class="table-card"><table class="data-table"><thead><tr><th>ŞEF</th><th>ALAN</th><th>GÖREV</th><th>KULLANICI ADI</th><th>DURUM</th><th></th></tr></thead>
     <tbody>${users.map(user => `<tr>
       <td><div class="person-cell"><strong>${escapeHtml(user.fullName)}</strong><small>${escapeHtml(user.workshop || '—')}</small></div></td>
       <td>${escapeHtml(user.department)}</td><td>${escapeHtml(user.position)}</td>
-      <td>${user.username ? `<strong>${escapeHtml(user.username)}</strong>` : '<span class="badge warn">HESAP YOK</span>'}</td>
+      <td><strong>${escapeHtml(user.username)}</strong></td>
       <td><span class="badge ${user.active ? 'ok' : ''}">${user.active ? 'AKTİF' : 'PASİF'}</span></td>
-      <td><button class="ghost-button" data-edit-user="${user.id}">${user.username ? 'Düzenle' : 'Hesap oluştur'}</button></td>
+      <td><button class="ghost-button" data-edit-user="${user.id}">Yönet</button></td>
     </tr>`).join('') || '<tr><td colspan="6"><div class="empty-state">Eşleşen kayıt bulunamadı.</div></td></tr>'}</tbody></table></div>`;
   $('#user-search').addEventListener('input', event => drawUsers(event.target.value));
   $$('[data-edit-user]').forEach(button => button.addEventListener('click', () => openAccount(Number(button.dataset.editUser))));
-}
-
-function usernameSuggestion(name) {
-  return name.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i').replace(/[^a-z0-9 ]/g, '').trim().split(/\s+/).join('.');
 }
 
 function openAccount(id) {
   const user = state.users.find(item => item.id === id);
   const form = $('#account-form');
   form.elements.id.value = id;
-  form.elements.username.value = user.username || usernameSuggestion(user.fullName);
+  form.elements.username.value = user.username;
   form.elements.password.value = '';
-  form.elements.password.required = !user.username;
   form.elements.active.checked = user.active;
   $('#account-person').textContent = user.fullName;
   $('#account-dialog').showModal();
@@ -224,7 +219,7 @@ async function saveAccount(event) {
   const form = event.currentTarget;
   const id = Number(form.elements.id.value);
   try {
-    const data = await request(`/api/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify({ username: form.elements.username.value, password: form.elements.password.value, active: form.elements.active.checked }) });
+    const data = await request(`/api/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify({ password: form.elements.password.value, active: form.elements.active.checked }) });
     state.users = state.users.map(user => user.id === id ? data.user : user);
     $('#account-dialog').close();
     drawUsers($('#user-search')?.value || '');
