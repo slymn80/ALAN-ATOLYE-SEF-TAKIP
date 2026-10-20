@@ -208,6 +208,12 @@ function parseCookies(req) {
   return result;
 }
 
+function clientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.trim()) return forwarded.split(',')[0].trim();
+  return req.socket.remoteAddress || 'unknown';
+}
+
 function publicUser(row) {
   return {
     id: row.id,
@@ -479,12 +485,12 @@ async function api(req, res, url) {
   const { pathname, searchParams } = url;
 
   if (req.method === 'POST' && pathname === '/api/auth/login') {
-    const key = req.socket.remoteAddress || 'unknown';
+    const body = await readBody(req);
+    const username = sanitizeText(body.username, 50);
+    const key = `${clientIp(req)}:${username.toLocaleLowerCase('tr-TR')}`;
     const attempt = loginAttempts.get(key) || { count: 0, since: Date.now() };
     if (Date.now() - attempt.since > 15 * 60_000) { attempt.count = 0; attempt.since = Date.now(); }
     if (attempt.count >= 10) return json(res, 429, { error: 'Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.' });
-    const body = await readBody(req);
-    const username = sanitizeText(body.username, 50);
     const row = db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE AND active = 1').get(username);
     if (!row || !verifyPassword(String(body.password || ''), row.password_hash)) {
       attempt.count += 1;
