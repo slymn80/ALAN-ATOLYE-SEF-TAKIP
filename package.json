@@ -1,0 +1,17 @@
+{
+  "name": "alan-atolye-sef-takip",
+  "version": "1.0.0",
+  "private": true,
+  "description": "2026-2027 alan ve atölye şefleri haftalık takip uygulaması",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "dev": "node --watch --disable-warning=ExperimentalWarning server.js",
+    "check": "node --check server.js && node --check public/app.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "pdfkit": "^0.20.2"
+  }
+}

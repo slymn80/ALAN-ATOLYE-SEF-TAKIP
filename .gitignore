@@ -1,0 +1,12 @@
+data/
+.tmp-pdf/
+node_modules/
+.env
+npm-debug.log*
+server.log
+server-error.log
+
+# Kişisel veri içeren kaynak belgeler yalnızca yerelde tutulur
+şefler listesi.pdf
+şeflik saatleri.xlsx
+çalışma saatleri.png
