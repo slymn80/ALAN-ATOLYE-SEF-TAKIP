@@ -151,8 +151,11 @@ function seedDatabase() {
   const setFixedUsername = db.prepare('UPDATE users SET username = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
   const createMissingCredentials = db.prepare(`UPDATE users SET username = ?, password_hash = ?, must_change_password = 1,
     updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
-  const automaticAccountsApplied = Boolean(db.prepare("SELECT 1 FROM app_settings WHERE setting_key = 'automatic_chief_accounts_v1'").get());
+  const automaticAccountsApplied = Boolean(db.prepare("SELECT 1 FROM app_settings WHERE setting_key = 'automatic_chief_accounts_v2'").get());
   const configuredChiefPassword = process.env.CHIEF_DEFAULT_PASSWORD;
+  if ((process.env.RENDER === 'true' || process.env.RENDER_SERVICE_ID) && !configuredChiefPassword) {
+    throw new Error('Render ortamında CHIEF_DEFAULT_PASSWORD tanımlanmalıdır.');
+  }
   if (configuredChiefPassword && (configuredChiefPassword.length < 8 || configuredChiefPassword.length > 128)) {
     throw new Error('CHIEF_DEFAULT_PASSWORD en az 8 karakter olmalıdır.');
   }
@@ -173,7 +176,7 @@ function seedDatabase() {
     }
     if (!automaticAccountsApplied) {
       db.prepare("DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE role = 'chief')").run();
-      db.prepare("INSERT INTO app_settings (setting_key, setting_value) VALUES ('automatic_chief_accounts_v1', CURRENT_TIMESTAMP)").run();
+      db.prepare("INSERT INTO app_settings (setting_key, setting_value) VALUES ('automatic_chief_accounts_v2', CURRENT_TIMESTAMP)").run();
     }
     db.exec('COMMIT');
   } catch (error) {
